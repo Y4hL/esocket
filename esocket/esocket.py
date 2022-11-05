@@ -1,16 +1,20 @@
-import socket
+""" Core ESocket of the esocket module """
 import os
 import socket
 import logging
-from typing import Tuple, Union
+
 from cryptography import x509
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives import padding
+from cryptography.hazmat.primitives.asymmetric import padding as asympadding
 from cryptography.hazmat.primitives.asymmetric import ec
 from cryptography.hazmat.primitives.kdf.hkdf import HKDF
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 
+# local imports
+import errors
+import utils
 
 class ESocket:
     """
@@ -51,23 +55,28 @@ class ESocket:
     def __init__(self,
         socket: socket.socket,
         server: bool,
-        require_cert: bool = True,
-        cert: x509.Certificate = None
+        cert: x509.Certificate,
+        private_key: ec.EllipticCurvePrivateKeyWithSerialization = None
         ) -> None:
         """
         Initialize class
 
         socket: socket object to wrap
         server: bool if socket is the server
-        require_cert: require a valid certificate during handshake
-        cert: in the servers case its own certificate, in clients case certificate it supports
+        cert: in the servers case its own certificate, in clients case certificate it trusts
+        private_key: private key used to generate certificate (server only)
         """
         self.sock = socket
         self.server = server
-        self.require_cert = require_cert
-        self.cert = cert
+        self.cert = utils.load_cert(cert)
 
-        # Start handshake
+        if self.server:
+            if private_key is None:
+                raise errors.MissingArgument('server requires private key')
+            else:
+                self.private_key = utils.load_key(private_key)
+
+        # Perform handshake
         self.handshake()
 
     def close(self) -> None:
@@ -102,14 +111,71 @@ class ESocket:
     def handshake(self) -> None:
         """
         Handshake 
-        
-        Verify certificate
+
         Generate keypair
         Exchange public keys
+        Verify signature
         Generate shared session key
         Server sends IV for AES256
         Create AES cipher
         """
+        logging.info('Performing esocket handshake')
+
+        # Keys used for session
+        private_key = ec.generate_private_key(ec.SECP521R1())
+        pem_public_key = private_key.public_key().public_bytes(
+            encoding=serialization.Encoding.PEM, 
+            format=serialization.PublicFormat.SubjectPublicKeyInfo
+        )
+
+        if self.server:
+            # Sign public key using certificate private key
+            signature = self.private_key.sign(
+                pem_public_key,
+                ec.ECDSA(hashes.SHA512())
+            )
+            self._send(pem_public_key)
+            serialized_peer_public_key = self._recv()
+            self._send(signature)
+        else:
+            serialized_peer_public_key = self._recv()
+            self._send(pem_public_key)
+            signature = self._recv()
+
+            # Verify signature
+            cert_public_key = self.cert.public_key()
+            cert_public_key.verify(
+                signature,
+                serialized_peer_public_key,
+                ec.ECDSA(hashes.SHA512())
+            )
+
+        # Exchange private and peer public key for shared key
+        peer_public_key = serialization.load_pem_public_key(serialized_peer_public_key)
+        shared_key = private_key.exchange(ec.ECDH(), peer_public_key)
+
+        # Derive key
+        derived_key = HKDF(
+            algorithm=hashes.SHA512(),
+            length=32,
+            salt=None,
+            info=None
+        ).derive(shared_key)
+
+        # Share IV for AES
+        if self.server:
+            iv = os.urandom(16)
+            self._send(iv)
+        else:
+            iv = self._recv()
+
+        self._cipher = Cipher(
+            algorithm=algorithms.AES256(derived_key),
+            mode=modes.CBC(iv)
+        )
+        logging.info('Handshake completed successfully')
+
+        return True
 
     def _send(self, data: bytes) -> None:
         """ Send raw message to peer """

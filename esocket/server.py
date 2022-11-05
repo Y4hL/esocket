@@ -11,6 +11,15 @@ sock.listen(5)
 
 conn, address = sock.accept()
 
-esock = ESocket(conn, True, False)
+with open('key.pem', 'rb') as file:
+    key = file.read()
+
+with open('cert.pem', 'rb') as file:
+    cert = file.read()
+
+print(key)
+print(cert)
+
+esock = ESocket(conn, True, cert, key)
 
 esock._send(b'Successfully opened file.')

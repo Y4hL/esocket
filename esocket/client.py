@@ -4,7 +4,10 @@ from esocket import ESocket
 sock = socket.socket()
 sock.connect(('', 6969))
 
-esock = ESocket(sock, False, False)
+with open('cert.pem', 'rb') as file:
+    cert = file.read()
+
+esock = ESocket(sock, False, cert)
 
 
 print(esock._recv())
