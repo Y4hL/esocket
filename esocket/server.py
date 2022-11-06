@@ -6,7 +6,7 @@ sock = socket.socket()
 sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 sock.setblocking(True)
 
-sock.bind(('', 6969))
+sock.bind(('localhost', 6969))
 sock.listen(5)
 
 conn, address = sock.accept()
@@ -16,9 +16,6 @@ with open('key.pem', 'rb') as file:
 
 with open('cert.pem', 'rb') as file:
     cert = file.read()
-
-print(key)
-print(cert)
 
 esock = ESocket(conn, True, cert, key)
 

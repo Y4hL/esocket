@@ -26,7 +26,7 @@ def make_keys():
         file.write(key)
 
     # Generate Certificate
-    cert = utils.make_cert(key)
+    cert = utils.make_cert(utils.load_key(key))
     with open(CERT_PATH, 'wb') as file:
         file.write(cert)
 
