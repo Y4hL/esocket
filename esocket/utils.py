@@ -8,15 +8,14 @@ from cryptography.x509.oid import NameOID
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives import serialization
 
-from cryptography.hazmat.primitives.asymmetric.ec import generate_private_key
-from cryptography.hazmat.primitives.asymmetric.ec import SECP521R1
+from cryptography.hazmat.primitives.asymmetric import ec
 
 
-def generate() -> tuple:
+def generate() -> bytes:
     """ Generate a new private key """
     logging.info('Generating new private key')
 
-    private_key = generate_private_key(SECP521R1())
+    private_key = ec.generate_private_key(ec.SECP521R1())
     pem = private_key.private_bytes(
         encoding=serialization.Encoding.PEM,
         format=serialization.PrivateFormat.TraditionalOpenSSL,
@@ -25,7 +24,7 @@ def generate() -> tuple:
 
     return pem
 
-def make_cert(private_key) -> tuple:
+def make_cert(private_key) -> bytes:
     """ Create a certificate from a private key """
     logging.info('Generating new certificate')
 
@@ -57,11 +56,11 @@ def make_cert(private_key) -> tuple:
 
     return cert.public_bytes(serialization.Encoding.PEM)
 
-def load_key(pem):
+def load_key(pem) -> ec.EllipticCurvePrivateKey:
     """ Load a private key from PEM format """
     return serialization.load_pem_private_key(pem, password=None)
 
-def load_cert(pem):
+def load_cert(pem) -> x509.Certificate:
     """ Load certificate from PEM format """
     return x509.load_pem_x509_certificate(pem)
 

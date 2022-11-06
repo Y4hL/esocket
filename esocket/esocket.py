@@ -4,17 +4,15 @@ import socket
 import logging
 
 from cryptography import x509
-from cryptography.hazmat.primitives import hashes
-from cryptography.hazmat.primitives import padding
-from cryptography.hazmat.primitives.asymmetric import padding as asympadding
-from cryptography.hazmat.primitives.asymmetric import ec
 from cryptography.hazmat.primitives.kdf.hkdf import HKDF
-from cryptography.hazmat.primitives import serialization
+from cryptography.hazmat.primitives.asymmetric import ec
+from cryptography.hazmat.primitives import hashes, padding, serialization
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 
 # local imports
 import errors
 import utils
+
 
 class ESocket:
     """
@@ -119,7 +117,6 @@ class ESocket:
         Server sends IV for AES256
         Create AES cipher
         """
-        logging.info('Performing esocket handshake')
 
         # Keys used for session
         private_key = ec.generate_private_key(ec.SECP521R1())
@@ -143,8 +140,7 @@ class ESocket:
             signature = self._recv()
 
             # Verify signature
-            cert_public_key = self.cert.public_key()
-            cert_public_key.verify(
+            self.cert.public_key().verify(
                 signature,
                 serialized_peer_public_key,
                 ec.ECDSA(hashes.SHA512())
