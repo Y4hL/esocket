@@ -10,8 +10,8 @@ from cryptography.hazmat.primitives import hashes, padding, serialization
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 
 # local imports
-from . import errors
-from . import utils
+from .errors import MissingArgument
+from .utils import load_cert, load_key
 
 class ESocket:
     """
@@ -65,13 +65,13 @@ class ESocket:
         """
         self.sock = socket
         self.server = server
-        self.cert = utils.load_cert(cert)
+        self.cert = load_cert(cert)
 
         if self.server:
             if private_key is None:
-                raise errors.MissingArgument('server requires private key')
+                raise MissingArgument('server requires private key')
             else:
-                self.private_key = utils.load_key(private_key)
+                self.private_key = load_key(private_key)
 
         # Perform handshake
         self.handshake()

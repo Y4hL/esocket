@@ -1,8 +1,7 @@
 """ CLI for esocket """
 import os
 
-from esocket import utils
-
+import esocket
 
 
 def make_keys():
@@ -21,12 +20,12 @@ def make_keys():
             return
 
     # Generate private key
-    key = utils.generate()
+    key = esocket.utils.generate()
     with open(KEY_PATH, 'wb') as file:
         file.write(key)
 
     # Generate Certificate
-    cert = utils.make_cert(utils.load_key(key))
+    cert = esocket.utils.make_cert(esocket.utils.load_key(key))
     with open(CERT_PATH, 'wb') as file:
         file.write(cert)
 

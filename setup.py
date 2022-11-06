@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-""" Setup file for mailpy package """
+""" Setup file for esocket package """
 from setuptools import setup
 
 
