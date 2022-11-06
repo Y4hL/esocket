@@ -1,5 +1,4 @@
 """ Utilities for the esocket module """
-
 import logging
 import datetime
 

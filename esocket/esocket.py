@@ -10,9 +10,8 @@ from cryptography.hazmat.primitives import hashes, padding, serialization
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 
 # local imports
-import errors
-import utils
-
+from . import errors
+from . import utils
 
 class ESocket:
     """
@@ -46,7 +45,7 @@ class ESocket:
 
     # AES cipher
     _cipher = None
-    
+
     # Padding for AES
     _pad = padding.PKCS7(256)
 
