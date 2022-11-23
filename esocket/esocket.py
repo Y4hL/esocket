@@ -179,7 +179,7 @@ class ESocket:
         header = len(data).to_bytes(self.header_length, byteorder='big')
 
         # Add header to message and send
-        self.sock.send(header + data)
+        self.sock.sendall(header + data)
 
     def _recv(self) -> bytes:
         """ Receive raw message from peer """
